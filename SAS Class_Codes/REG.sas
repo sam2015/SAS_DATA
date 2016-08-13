@@ -1,0 +1,186 @@
+LIBNAME R "C:\Documents and Settings\STD\Desktop\SOUVIK SIR BATCH FILES\BATCH 73\REG";
+RUN;
+DATA B74.R;
+SET R.ELEMAPI;
+S = SUM(NOT_HSG,HSG,SOME_COL,COL_GRAD,GRAD_SCH);
+RUN;
+PROC FREQ DATA = b74.R;
+TABLES S;
+RUN;
+ODS HTML FILE = "C:\Documents and Settings\STD\Desktop\SOUVIK SIR BATCH FILES\BATCH 65\REG\R.XLS";
+PROC UNIVARIATE DATA = R.ELEMAPI NEXTROBS = 10;
+RUN;
+ODS HTML CLOSE;
+PROC FREQ DATA = b74.R;
+TABLES S;
+WHERE AVG_ED = .;
+RUN;
+PROC FREQ DATA = b74.R;
+TABLES AVG_ED;
+WHERE S=0;
+RUN;
+PROC FREQ DATA = b74.R;TABLES DNUM;
+WHERE FULL <=1;RUN;
+DATA b74.R;
+SET b74.R;
+ACS_K3 = ABS(ACS_K3);
+IF FULL<=1 THEN FULL=FULL*100;
+IF AVG_ED = . THEN AVG_ED = 0;
+IF ENROLL > 1149 THEN ENROLL = 1149;
+RUN;
+ODS HTML FILE = "C:\Documents and Settings\STD\Desktop\SOUVIK SIR BATCH FILES\BATCH 65\REG\R.XLS";
+PROC MEANS DATA = b74.R NMISS MEAN;
+RUN;
+ODS HTML CLOSE;
+PROC MEANS DATA = b74.R NMISS MEAN MIN MAX;
+VAR MEALS;
+CLASS MEALCAT;
+RUN;
+DATA b74.R;
+SET b74.R;
+IF mobility = . THEN mobility = 18.25;
+IF acs_k3 = . THEN acs_k3 = 19.16;
+IF acs_46 = . THEN acs_46 = 29.69;
+IF MEALCAT = 1 AND MEALS = .
+THEN MEALS = 28.36;
+IF MEALCAT = 2 AND MEALS = . 
+THEN MEALS = 66.05;
+RUN;
+PROC FREQ DATA = b74.R;
+TABLES YR_RND MEALCAT;
+RUN;
+ODS HTML FILE = "C:\Documents and Settings\STD\Desktop\SOUVIK SIR BATCH FILES\BATCH 65\REG\R.XLS";
+PROC CORR DATA = b74.R;
+VAR API00;
+WITH 
+meals
+ell
+mobility
+acs_k3
+acs_46
+not_hsg
+hsg
+some_col
+col_grad
+grad_sch
+avg_ed
+full
+emer
+enroll
+;
+RUN;
+ODS HTML CLOSE;
+PROC MEANS DATA = b74.R MEAN;
+VAR API00;
+CLASS MEALCAT;
+RUN;
+PROC ANOVA DATA = b74.R;
+CLASS MEALCAT;
+MODEL API00 = MEALCAT;
+RUN;
+PROC MEANS DATA = b74.R MEAN;
+VAR API00;
+CLASS YR_RND;
+RUN;
+PROC MEANS DATA = b74.R MEAN;
+VAR FULL;
+CLASS YR_RND;
+RUN;
+PROC ANOVA DATA = b74.R;
+CLASS YR_RND;
+MODEL API00 = YR_RND;
+RUN;
+/*REGRESSION*/
+ODS HTML FILE = "C:\Documents and Settings\STD\Desktop\SOUVIK SIR BATCH FILES\BATCH 65\REG\R.XLS";
+PROC REG DATA = b74.R;
+MODEL API00 = 
+/*meals*/
+ell
+mobility
+/*acs_k3*/
+/*acs_46*/
+/*not_hsg*/
+/*hsg*/
+/*some_col*/
+/*col_grad*/
+/*grad_sch*/
+avg_ed
+full
+/*emer*/
+/*enroll*/
+/*MEALCAT */
+/*YR_RND*/
+/VIF COLLIN;
+RUN;
+ODS HTML CLOSE;
+/*CHECK FOR HETEROSCEDASTICITY*/
+ODS HTML FILE = "C:\Documents and Settings\STD\Desktop\SOUVIK SIR BATCH FILES\BATCH 65\REG\R.XLS";
+PROC REG DATA = b74.R;
+MODEL API00 = 
+/*meals*/
+ell
+mobility
+/*acs_k3*/
+/*acs_46*/
+/*not_hsg*/
+/*hsg*/
+/*some_col*/
+/*col_grad*/
+/*grad_sch*/
+avg_ed
+full
+/*emer*/
+/*enroll*/
+/*MEALCAT */
+/*YR_RND*/
+/SPEC;
+RUN;
+ODS HTML CLOSE;
+/*CREATION OF OUTPUT FILE*/
+PROC REG DATA = b74.R;
+MODEL API00 = 
+/*meals*/
+ell
+mobility
+/*acs_k3*/
+/*acs_46*/
+/*not_hsg*/
+/*hsg*/
+/*some_col*/
+/*col_grad*/
+/*grad_sch*/
+avg_ed
+full
+/*emer*/
+/*enroll*/
+/*MEALCAT */
+/*YR_RND*/
+;
+OUTPUT OUT = b74.OPT P = PRED R = RES;
+RUN;
+QUIT;
+/*NORMALITY CHECK*/
+PROC UNIVARIATE DATA = b74.OPT NORMAL;
+VAR RES;
+HISTOGRAM RES/NORMAL;
+RUN;
+/*INDEPENDENCE OF RESIDUAL WITH PREDICTED AND INDEPENDENT*/
+/*VARIABLES*/
+PROC CORR DATA = b74.OPT;
+VAR RES;
+WITH PRED ell
+mobility avg_ed
+full;
+RUN;
+/*MAPE*/
+/*MEAN ABSOLUTE PERCENTAGE ERROR*/
+DATA b74.OPT;
+SET b74.OPT;
+ERR = ABS(RES/API00)*100;
+RUN;
+PROC MEANS DATA = b74.OPT MEAN;
+VAR ERR;
+RUN;
+/*IN SAMPLE VALIDATION*/
+/*OUT OF SAMPLE VALIDATION*/
+
